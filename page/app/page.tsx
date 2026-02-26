@@ -2,6 +2,15 @@
 
 import { useState, useEffect } from "react";
 import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -117,6 +126,7 @@ export default function DNSDashboard() {
   const [domainClients, setDomainClients] = useState<DomainClient[]>([]);
   const [domainPage, setDomainPage] = useState(1);
   const [activeTab, setActiveTab] = useState("overview");
+  const [queriesPerHour, setQueriesPerHour] = useState<{hour: string; count: number}[]>([]);
 
   const fetchData = async () => {
     const apiUrl = "";
@@ -130,6 +140,7 @@ export default function DNSDashboard() {
         uniqueDomainsRes,
         qpsRes,
         ipvRes,
+        hourRes,
       ] = await Promise.all([
         fetch(`${apiUrl}/api/top-domains`),
         fetch(`${apiUrl}/api/query-types`),
@@ -138,6 +149,7 @@ export default function DNSDashboard() {
         fetch(`${apiUrl}/api/unique-domains-count`),
         fetch(`${apiUrl}/api/queries-per-minute`),
         fetch(`${apiUrl}/api/ipv4-vs-ipv6`),
+        fetch(`${apiUrl}/api/queries-per-hour`),
       ]);
 
       const domainsData = await domainsRes.json();
@@ -164,6 +176,9 @@ export default function DNSDashboard() {
         ipvData?.find((item: any) => item.ip_type === "IPv6")?.count || 0;
       setIpv4Count(ipv4);
       setIpv6Count(ipv6);
+
+      const hourData = await hourRes.json();
+      setQueriesPerHour(Array.isArray(hourData) ? hourData : []);
 
       setLastUpdated(new Date());
     } catch (error) {
@@ -886,6 +901,58 @@ export default function DNSDashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Requests Over 24h Chart */}
+            <Card className="bg-white dark:bg-slate-900/50 border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                  Request Rate — Last 24 Hours
+                </CardTitle>
+                <CardDescription className="text-slate-500 dark:text-slate-400 text-xs">
+                  DNS queries per hour
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={queriesPerHour} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
+                    <XAxis
+                      dataKey="hour"
+                      tick={{ fontSize: 11, fill: "currentColor" }}
+                      className="opacity-50"
+                      interval={3}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "currentColor" }}
+                      className="opacity-50"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "var(--background)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                      labelFormatter={(l: string) => `Hour: ${l}`}
+                      formatter={(v: number) => [v.toLocaleString(), "Queries"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="count"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                      fill="url(#colorCount)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="domains" className="space-y-6">

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -379,6 +380,46 @@ func serveAPI(db *sql.DB) {
 			TotalQueries:     totalQueries,
 			TimeWindow:       1440,
 		})
+	})
+
+	mux.HandleFunc("/api/queries-per-hour", func(w http.ResponseWriter, r *http.Request) {
+		rows, err := db.Query(`
+			SELECT
+				strftime('%H', datetime(timestamp, 'unixepoch')) AS hour,
+				COUNT(*) AS count
+			FROM queries
+			WHERE timestamp >= strftime('%s','now') - 86400
+			GROUP BY hour
+			ORDER BY hour ASC
+		`)
+		if err != nil {
+			http.Error(w, "DB error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		type HourCount struct {
+			Hour  string `json:"hour"`
+			Count int    `json:"count"`
+		}
+
+		// Build a map so we can fill in missing hours with 0
+		counts := make(map[string]int)
+		for rows.Next() {
+			var h HourCount
+			if err := rows.Scan(&h.Hour, &h.Count); err != nil {
+				continue
+			}
+			counts[h.Hour] = h.Count
+		}
+
+		out := make([]HourCount, 24)
+		for i := 0; i < 24; i++ {
+			key := fmt.Sprintf("%02d", i)
+			out[i] = HourCount{Hour: key + ":00", Count: counts[key]}
+		}
+
+		json.NewEncoder(w).Encode(out)
 	})
 
 	mux.HandleFunc("/api/ipv4-vs-ipv6", func(w http.ResponseWriter, r *http.Request) {
