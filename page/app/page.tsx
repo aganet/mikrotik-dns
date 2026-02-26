@@ -511,7 +511,11 @@ export default function DNSDashboard() {
           </Card>
 
           {/* Unique Domains */}
-          <Card className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-fuchsia-900/20 border-violet-200/50 dark:border-violet-800/50 shadow-sm dark:shadow-lg dark:shadow-violet-900/10">
+          <Card
+            className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-fuchsia-900/20 border-violet-200/50 dark:border-violet-800/50 shadow-sm dark:shadow-lg dark:shadow-violet-900/10 cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setActiveTab("domains")}
+            title="View all domains"
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-400 dark:to-purple-500 rounded-xl shadow-md">
