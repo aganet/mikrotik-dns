@@ -126,7 +126,7 @@ export default function DNSDashboard() {
   const [domainClients, setDomainClients] = useState<DomainClient[]>([]);
   const [domainPage, setDomainPage] = useState(1);
   const [activeTab, setActiveTab] = useState("overview");
-  const [queriesPerHour, setQueriesPerHour] = useState<{hour: string; count: number}[]>([]);
+  const [queriesPerHour, setQueriesPerHour] = useState<{ts: number; count: number}[]>([]);
 
   const fetchData = async () => {
     const apiUrl = "";
@@ -592,10 +592,12 @@ export default function DNSDashboard() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="opacity-10" />
                     <XAxis
-                      dataKey="hour"
+                      dataKey="ts"
                       tick={{ fontSize: 11, fill: "currentColor" }}
                       className="opacity-50"
-                      interval={3}
+                      tickFormatter={(ts: number) =>
+                        new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }
                     />
                     <YAxis
                       tick={{ fontSize: 11, fill: "currentColor" }}
@@ -608,7 +610,9 @@ export default function DNSDashboard() {
                         borderRadius: "8px",
                         fontSize: "12px",
                       }}
-                      labelFormatter={(l: string) => `Hour: ${l}`}
+                      labelFormatter={(ts: number) =>
+                        new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      }
                       formatter={(v: number) => [v.toLocaleString(), "Queries"]}
                     />
                     <Area

@@ -382,15 +382,16 @@ func serveAPI(db *sql.DB) {
 	})
 
 	mux.HandleFunc("/api/queries-per-hour", func(w http.ResponseWriter, r *http.Request) {
-		// Use 'localtime' so hours match the server's timezone
+		// Floor each timestamp to its hour bucket and return the raw unix ts.
+		// The browser will format it in the user's local timezone.
 		rows, err := db.Query(`
 			SELECT
-				strftime('%H', datetime(timestamp, 'unixepoch', 'localtime')) AS hour,
+				(timestamp / 3600) * 3600 AS hour_ts,
 				COUNT(*) AS count
 			FROM queries
 			WHERE timestamp >= strftime('%s','now') - 86400
-			GROUP BY hour
-			ORDER BY hour ASC
+			GROUP BY hour_ts
+			ORDER BY hour_ts ASC
 		`)
 		if err != nil {
 			http.Error(w, "DB error", http.StatusInternalServerError)
@@ -399,18 +400,16 @@ func serveAPI(db *sql.DB) {
 		defer rows.Close()
 
 		type HourCount struct {
-			Hour  string `json:"hour"`
-			Count int    `json:"count"`
+			Ts    int64 `json:"ts"`
+			Count int   `json:"count"`
 		}
 
-		// Only return hours that actually have data
 		var out []HourCount
 		for rows.Next() {
 			var h HourCount
-			if err := rows.Scan(&h.Hour, &h.Count); err != nil {
+			if err := rows.Scan(&h.Ts, &h.Count); err != nil {
 				continue
 			}
-			h.Hour = h.Hour + ":00"
 			out = append(out, h)
 		}
 		if out == nil {
