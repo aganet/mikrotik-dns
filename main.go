@@ -382,16 +382,16 @@ func serveAPI(db *sql.DB) {
 	})
 
 	mux.HandleFunc("/api/queries-per-hour", func(w http.ResponseWriter, r *http.Request) {
-		// Floor each timestamp to its hour bucket and return the raw unix ts.
+		// Floor each timestamp to its 15-minute bucket and return the raw unix ts.
 		// The browser will format it in the user's local timezone.
 		rows, err := db.Query(`
 			SELECT
-				(timestamp / 3600) * 3600 AS hour_ts,
+				(timestamp / 900) * 900 AS bucket_ts,
 				COUNT(*) AS count
 			FROM queries
 			WHERE timestamp >= strftime('%s','now') - 86400
-			GROUP BY hour_ts
-			ORDER BY hour_ts ASC
+			GROUP BY bucket_ts
+			ORDER BY bucket_ts ASC
 		`)
 		if err != nil {
 			http.Error(w, "DB error", http.StatusInternalServerError)

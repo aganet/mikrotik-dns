@@ -595,6 +595,7 @@ export default function DNSDashboard() {
                       dataKey="ts"
                       tick={{ fontSize: 11, fill: "currentColor" }}
                       className="opacity-50"
+                      interval={7}
                       tickFormatter={(ts: number) =>
                         new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                       }
