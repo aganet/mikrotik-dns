@@ -289,10 +289,10 @@ func serveAPI(db *sql.DB) {
 		if partial {
 			likePattern := "%" + domain + "%"
 			rows, err = db.Query(`
-        SELECT DISTINCT domain, type
+        SELECT timestamp, client, domain, type
         FROM queries
         WHERE domain LIKE ? AND timestamp >= strftime('%s','now')-86400
-        ORDER BY domain
+        ORDER BY timestamp DESC
         LIMIT ? OFFSET ?`, likePattern, pageSize, offset)
 		} else {
 			rows, err = db.Query(`
@@ -310,22 +310,27 @@ func serveAPI(db *sql.DB) {
 
 		if partial {
 			var domains []struct {
+				Timestamp  int64         `json:"timestamp"`
+				Client     string        `json:"client"`
 				Domain     string        `json:"domain"`
 				Type       string        `json:"type"`
 				Resolution DNSResolution `json:"resolution"`
 			}
 
 			for rows.Next() {
-				var d, t string
-				rows.Scan(&d, &t)
+				var ts int64
+				var c, d, t string
+				rows.Scan(&ts, &c, &d, &t)
 
 				resolution := resolveDNS(d, t)
 
 				domains = append(domains, struct {
+					Timestamp  int64         `json:"timestamp"`
+					Client     string        `json:"client"`
 					Domain     string        `json:"domain"`
 					Type       string        `json:"type"`
 					Resolution DNSResolution `json:"resolution"`
-				}{d, t, resolution})
+				}{ts, c, d, t, resolution})
 			}
 			json.NewEncoder(w).Encode(domains)
 		} else {
