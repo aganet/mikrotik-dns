@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -383,9 +382,10 @@ func serveAPI(db *sql.DB) {
 	})
 
 	mux.HandleFunc("/api/queries-per-hour", func(w http.ResponseWriter, r *http.Request) {
+		// Use 'localtime' so hours match the server's timezone
 		rows, err := db.Query(`
 			SELECT
-				strftime('%H', datetime(timestamp, 'unixepoch')) AS hour,
+				strftime('%H', datetime(timestamp, 'unixepoch', 'localtime')) AS hour,
 				COUNT(*) AS count
 			FROM queries
 			WHERE timestamp >= strftime('%s','now') - 86400
@@ -403,20 +403,18 @@ func serveAPI(db *sql.DB) {
 			Count int    `json:"count"`
 		}
 
-		// Build a map so we can fill in missing hours with 0
-		counts := make(map[string]int)
+		// Only return hours that actually have data
+		var out []HourCount
 		for rows.Next() {
 			var h HourCount
 			if err := rows.Scan(&h.Hour, &h.Count); err != nil {
 				continue
 			}
-			counts[h.Hour] = h.Count
+			h.Hour = h.Hour + ":00"
+			out = append(out, h)
 		}
-
-		out := make([]HourCount, 24)
-		for i := 0; i < 24; i++ {
-			key := fmt.Sprintf("%02d", i)
-			out[i] = HourCount{Hour: key + ":00", Count: counts[key]}
+		if out == nil {
+			out = []HourCount{}
 		}
 
 		json.NewEncoder(w).Encode(out)
