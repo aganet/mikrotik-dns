@@ -489,7 +489,11 @@ export default function DNSDashboard() {
           </Card>
 
           {/* Active Clients */}
-          <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-emerald-200/50 dark:border-emerald-800/50 shadow-sm dark:shadow-lg dark:shadow-emerald-900/10">
+          <Card
+            className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-emerald-200/50 dark:border-emerald-800/50 shadow-sm dark:shadow-lg dark:shadow-emerald-900/10 cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setActiveTab("clients")}
+            title="View all clients"
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-green-500 rounded-xl shadow-md">
