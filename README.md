@@ -152,4 +152,10 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+GNU General Public License v3.0, see [LICENSE](LICENSE).
+
+This is a derivative of [publi0/mikrotik-dns](https://github.com/publi0/mikrotik-dns)
+by Felipe Publio, Copyright (C) 2025, released under the GPL-3.0. The
+collector, dashboard and build were rewritten by Georgios Anestopoulos in
+November 2026 (Copyright (C) 2026); see [CHANGELOG.md](CHANGELOG.md) for what
+changed. The whole work remains licensed under the GPL-3.0.

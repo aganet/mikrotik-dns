@@ -47,6 +47,11 @@ Rewrite of the collector and the dashboard. Ports (3000, 5354/udp) and the
 - CI runs tests and builds the image; images are published only for `v*`
   tags.
 
+### Fixed
+
+- The README said MIT; the project has always shipped the GPL-3.0 text in
+  `LICENSE`, so the documentation now states GPL-3.0.
+
 ### Removed
 
 - The old endpoints (`/api/top-domains`, `/api/query-types`, `/api/clients`
