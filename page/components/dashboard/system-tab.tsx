@@ -1,10 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Radio, Router, Server } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtAgo, fmtBytes, fmtDuration, fmtInt, fmtPct } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "./section-title";
 
 interface Props {
   active: boolean;
@@ -31,8 +33,7 @@ export function SystemTab({ active }: Props) {
     <div className="grid gap-4 lg:grid-cols-3">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Collector</CardTitle>
-          <CardDescription>mikrotik-dns {data.version}</CardDescription>
+          <SectionTitle icon={Server} tone="blue" title="Collector" description={`mikrotik-dns ${data.version}`} />
         </CardHeader>
         <CardContent>
           <Row label="Uptime">{fmtDuration(data.uptime_secs)}</Row>
@@ -45,8 +46,7 @@ export function SystemTab({ active }: Props) {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Log stream</CardTitle>
-          <CardDescription>Syslog lines since start</CardDescription>
+          <SectionTitle icon={Radio} tone="emerald" title="Log stream" description="Syslog lines since start" />
         </CardHeader>
         <CardContent>
           <Row label="Lines received">{fmtInt(ingest.received)}</Row>
@@ -72,10 +72,12 @@ export function SystemTab({ active }: Props) {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Router</CardTitle>
-          <CardDescription>
-            {router ? (router.error ? `Poll failed: ${router.error}` : `${router.identity} via REST API, ${fmtAgo(router.updated_at)}`) : "REST API not configured"}
-          </CardDescription>
+          <SectionTitle
+            icon={Router}
+            tone="violet"
+            title="Router"
+            description={router ? (router.error ? `Poll failed: ${router.error}` : `${router.identity} via REST API, ${fmtAgo(router.updated_at)}`) : "REST API not configured"}
+          />
         </CardHeader>
         <CardContent>
           {!router && (

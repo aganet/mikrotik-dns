@@ -4,62 +4,65 @@
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
+        --background: 222 40% 97%;
+        --foreground: 226 40% 12%;
         --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
+        --card-foreground: 226 40% 12%;
         --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 0 0% 3.9%;
-        --radius: 0.5rem;
+        --popover-foreground: 226 40% 12%;
+        --primary: 239 72% 58%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 226 30% 94%;
+        --secondary-foreground: 226 40% 20%;
+        --muted: 226 30% 94%;
+        --muted-foreground: 226 15% 46%;
+        --accent: 236 60% 95%;
+        --accent-foreground: 239 60% 35%;
+        --destructive: 0 72% 51%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 226 25% 89%;
+        --input: 226 25% 86%;
+        --ring: 239 72% 58%;
+        --radius: 0.75rem;
 
         /* Chart roles: one categorical hue for ranked marks, reserved status
            colors for query outcomes, and recessive chrome. */
         --viz-1: #2a78d6;
         --viz-2: #eb6834;
-        --viz-grid: #e1e0d9;
+        --viz-grid: #e3e5ee;
         --status-good: #0ca30c;
         --status-warning: #fab219;
         --status-serious: #ec835a;
         --status-critical: #d03b3b;
         --status-neutral: #898781;
+
+        --page-glow: 239 72% 58%;
     }
     .dark {
-        --background: 222 84% 4.9%;
-        --foreground: 210 40% 98%;
-        --card: 222 47% 8%;
-        --card-foreground: 210 40% 98%;
-        --popover: 222 47% 11%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 217 91% 60%;
-        --primary-foreground: 222 84% 4.9%;
-        --secondary: 217 33% 17%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 215 28% 17%;
-        --muted-foreground: 217 10% 64%;
-        --accent: 215 28% 17%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 63% 31%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 215 28% 17%;
-        --input: 215 28% 17%;
-        --ring: 217 91% 60%;
+        --background: 228 36% 7%;
+        --foreground: 220 30% 94%;
+        --card: 228 30% 11%;
+        --card-foreground: 220 30% 94%;
+        --popover: 228 30% 12%;
+        --popover-foreground: 220 30% 94%;
+        --primary: 236 84% 70%;
+        --primary-foreground: 228 36% 8%;
+        --secondary: 228 26% 17%;
+        --secondary-foreground: 220 30% 94%;
+        --muted: 228 26% 16%;
+        --muted-foreground: 224 14% 62%;
+        --accent: 236 40% 20%;
+        --accent-foreground: 236 90% 85%;
+        --destructive: 0 62% 45%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 228 22% 18%;
+        --input: 228 22% 22%;
+        --ring: 236 84% 70%;
 
         --viz-1: #3987e5;
         --viz-2: #d95926;
-        --viz-grid: #2c2c2a;
+        --viz-grid: #262b3d;
+        --page-glow: 236 84% 70%;
         color-scheme: dark;
     }
 }
@@ -70,5 +73,9 @@
     }
     body {
         @apply bg-background text-foreground;
+        background-image:
+            radial-gradient(60rem 28rem at 15% -10%, hsl(var(--page-glow) / 0.14), transparent 70%),
+            radial-gradient(40rem 20rem at 95% 0%, hsl(190 80% 55% / 0.08), transparent 70%);
+        background-attachment: fixed;
     }
 }

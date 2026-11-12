@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pause, Play, RefreshCw } from "lucide-react";
+import { Activity, AlertTriangle, Globe, Pause, Play, Radar, RefreshCw, Timer, Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtMs, fmtNum, fmtPct } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
@@ -81,12 +81,17 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">DNS Analytics</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-sky-500 text-primary-foreground shadow-lg shadow-primary/30">
+            <Radar className="h-6 w-6" aria-hidden />
+          </span>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">DNS Analytics</h1>
+            <p className="text-sm text-muted-foreground">
             {summary.updatedAt ? `Updated ${new Date(summary.updatedAt).toLocaleTimeString()}` : "Connecting"}
             {summary.error && <span className="ml-2 text-destructive">{summary.error}</span>}
-          </p>
+            </p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={range} onValueChange={setRange}>
@@ -134,23 +139,29 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" style={{ opacity: summary.loading && s ? 0.7 : 1, transition: "opacity 150ms" }}>
         <StatTile
+          icon={Activity}
+          tone="blue"
           label="Queries"
           value={totals ? fmtNum(totals.queries) : "-"}
           detail={totals ? `${(totals.queries / windowMinutes).toFixed(1)} per minute` : undefined}
           onClick={() => showQueries({})}
         />
-        <StatTile label="Clients" value={totals ? fmtNum(totals.clients) : "-"} detail="Unique addresses" onClick={() => setTab("clients")} />
-        <StatTile label="Domains" value={totals ? fmtNum(totals.domains) : "-"} detail="Unique names" onClick={() => setTab("domains")} />
+        <StatTile icon={Users} tone="emerald" label="Clients" value={totals ? fmtNum(totals.clients) : "-"} detail="Unique addresses" onClick={() => setTab("clients")} />
+        <StatTile icon={Globe} tone="violet" label="Domains" value={totals ? fmtNum(totals.domains) : "-"} detail="Unique names" onClick={() => setTab("domains")} />
         <StatTile
+          icon={AlertTriangle}
+          tone="amber"
           label="Problems"
           value={totals ? fmtNum(problems) : "-"}
-          detail={totals ? `${fmtPct(problems, totals.queries)} blocked, NXDOMAIN or failed` : undefined}
+          detail={totals ? `${fmtPct(problems, totals.queries)} of queries` : undefined}
           onClick={() => showQueries({ status: "problem" })}
         />
         <StatTile
+          icon={Timer}
+          tone="sky"
           label="Response time"
           value={totals ? fmtMs(totals.latency_ms) : "-"}
-          detail={totals?.latency_ms === null ? "Needs RouterOS 7 answer lines" : "Average query to answer"}
+          detail={totals?.latency_ms === null ? "Needs RouterOS 7 answers" : "Average, query to answer"}
         />
       </div>
 

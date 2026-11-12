@@ -2,7 +2,9 @@
 
 import type { Summary } from "@/lib/api";
 import { fmtPct } from "@/lib/format";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Activity, AlertTriangle, BarChart3, Globe, PieChart, Timer, Users } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "./section-title";
 import { RankedList } from "./ranked-list";
 import { SegmentedBar } from "./segmented-bar";
 import { LatencyChart, TimelineChart } from "./timeline-chart";
@@ -25,8 +27,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Queries over time</CardTitle>
-          <CardDescription>Stacked by outcome, {bucket_secs >= 3600 ? `${bucket_secs / 3600}h` : `${bucket_secs / 60}min`} buckets</CardDescription>
+          <SectionTitle icon={Activity} tone="blue" title="Queries over time" description={`Stacked by outcome, ${bucket_secs >= 3600 ? `${bucket_secs / 3600}h` : `${bucket_secs / 60}min`} buckets`} />
         </CardHeader>
         <CardContent>
           <TimelineChart buckets={timeline} bucketSecs={bucket_secs} />
@@ -36,8 +37,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Outcomes</CardTitle>
-            <CardDescription>As reported by the router</CardDescription>
+            <SectionTitle icon={PieChart} tone="emerald" title="Outcomes" description="As reported by the router" />
           </CardHeader>
           <CardContent className="space-y-6">
             <SegmentedBar
@@ -58,8 +58,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Query types</CardTitle>
-            <CardDescription>{summary.types.length} record types seen</CardDescription>
+            <SectionTitle icon={BarChart3} tone="violet" title="Query types" description={`${summary.types.length} record types seen`} />
           </CardHeader>
           <CardContent>
             <RankedList
@@ -75,8 +74,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Response time</CardTitle>
-            <CardDescription>Average delay between query and answer</CardDescription>
+            <SectionTitle icon={Timer} tone="sky" title="Response time" description="Average delay between query and answer" />
           </CardHeader>
           <CardContent>
             {hasLatency ? (
@@ -93,8 +91,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top domains</CardTitle>
-            <CardDescription>Most requested names</CardDescription>
+            <SectionTitle icon={Globe} tone="blue" title="Top domains" description="Most requested names" />
           </CardHeader>
           <CardContent>
             <RankedList
@@ -112,8 +109,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Top clients</CardTitle>
-            <CardDescription>Most active devices</CardDescription>
+            <SectionTitle icon={Users} tone="emerald" title="Top clients" description="Most active devices" />
           </CardHeader>
           <CardContent>
             <RankedList
@@ -137,8 +133,7 @@ export function Overview({ summary, onSelect, onOutcome }: Props) {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Problem domains</CardTitle>
-            <CardDescription>Blocked, NXDOMAIN or failed answers</CardDescription>
+            <SectionTitle icon={AlertTriangle} tone="amber" title="Problem domains" description="Blocked, NXDOMAIN or failed answers" />
           </CardHeader>
           <CardContent>
             <RankedList

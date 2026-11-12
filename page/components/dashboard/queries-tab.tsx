@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Search, X } from "lucide-react";
+import { Download, ScrollText, Search, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtInt } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
 import { useDebounced } from "@/hooks/use-debounced";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "./section-title";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QueriesTable } from "./queries-table";
@@ -48,13 +49,7 @@ export function QueriesTab({ range, intervalMs, active, filter, onFilter, onSele
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <CardTitle className="text-base">Query log</CardTitle>
-            <CardDescription>
-              {data ? `${fmtInt(total)} queries match` : "Loading"}
-              {error ? `. ${error}` : ""}
-            </CardDescription>
-          </div>
+          <SectionTitle icon={ScrollText} tone="violet" title="Query log" description={`${data ? `${fmtInt(total)} queries match` : "Loading"}${error ? `. ${error}` : ""}`} />
           <Button asChild variant="outline" size="sm">
             <a href={api.exportUrl(apiFilter)} download>
               <Download className="mr-2 h-4 w-4" />

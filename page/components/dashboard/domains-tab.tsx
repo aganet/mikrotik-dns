@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Globe, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtAgo, fmtInt } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "./section-title";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,10 +36,7 @@ export function DomainsTab({ range, intervalMs, active, onSelect }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <CardTitle className="text-base">Domains</CardTitle>
-            <CardDescription>Top 200 by query count{error ? `. ${error}` : ""}</CardDescription>
-          </div>
+          <SectionTitle icon={Globe} tone="blue" title="Domains" description={`Top 200 by query count${error ? `. ${error}` : ""}`} />
           <div className="flex flex-wrap gap-2">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

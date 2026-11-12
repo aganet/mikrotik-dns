@@ -1,9 +1,11 @@
 "use client";
 
+import { Users } from "lucide-react";
 import { api } from "@/lib/api";
 import { fmtAgo, fmtInt } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "./section-title";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Selection } from "./types";
 
@@ -20,10 +22,7 @@ export function ClientsTab({ range, intervalMs, active, onSelect }: Props) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Clients</CardTitle>
-        <CardDescription>
-          Devices by query count. Names come from DHCP leases{error ? `. ${error}` : ""}
-        </CardDescription>
+        <SectionTitle icon={Users} tone="emerald" title="Clients" description={`Devices by query count. Names come from DHCP leases${error ? `. ${error}` : ""}`} />
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto" style={{ opacity: loading ? 0.6 : 1, transition: "opacity 150ms" }}>
