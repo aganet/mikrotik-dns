@@ -435,7 +435,11 @@ export default function DNSDashboard() {
         {/* Stats Cards - Modern Design */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Queries */}
-          <Card className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/50 dark:via-blue-900/20 dark:to-indigo-900/30 border-slate-200/50 dark:border-slate-700/50 shadow-sm dark:shadow-lg dark:shadow-slate-900/20">
+          <Card
+            className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900/50 dark:via-blue-900/20 dark:to-indigo-900/30 border-slate-200/50 dark:border-slate-700/50 shadow-sm dark:shadow-lg dark:shadow-slate-900/20 cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setActiveTab("queries")}
+            title="View all queries"
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-400 dark:to-indigo-500 rounded-xl shadow-md">
@@ -485,7 +489,11 @@ export default function DNSDashboard() {
           </Card>
 
           {/* Active Clients */}
-          <Card className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-emerald-200/50 dark:border-emerald-800/50 shadow-sm dark:shadow-lg dark:shadow-emerald-900/10">
+          <Card
+            className="bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 dark:from-emerald-900/20 dark:via-green-900/20 dark:to-teal-900/20 border-emerald-200/50 dark:border-emerald-800/50 shadow-sm dark:shadow-lg dark:shadow-emerald-900/10 cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setActiveTab("clients")}
+            title="View all clients"
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 dark:from-emerald-400 dark:to-green-500 rounded-xl shadow-md">
@@ -507,7 +515,11 @@ export default function DNSDashboard() {
           </Card>
 
           {/* Unique Domains */}
-          <Card className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-fuchsia-900/20 border-violet-200/50 dark:border-violet-800/50 shadow-sm dark:shadow-lg dark:shadow-violet-900/10">
+          <Card
+            className="bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 dark:from-violet-900/20 dark:via-purple-900/20 dark:to-fuchsia-900/20 border-violet-200/50 dark:border-violet-800/50 shadow-sm dark:shadow-lg dark:shadow-violet-900/10 cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-md"
+            onClick={() => setActiveTab("domains")}
+            title="View all domains"
+          >
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 dark:from-violet-400 dark:to-purple-500 rounded-xl shadow-md">
