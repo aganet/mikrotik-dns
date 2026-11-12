@@ -82,6 +82,8 @@ interface DNSResolution {
 }
 
 interface DomainWithResolution {
+  timestamp: number;
+  client: string;
   domain: string;
   type: string;
   resolution: DNSResolution;
@@ -1373,7 +1375,7 @@ export default function DNSDashboard() {
                   {searchResults && searchResults.length > 0 && (
                     <div className="space-y-3">
                       {searchResults.map((result, index) => {
-                        const { domain, type, resolution } = result;
+                        const { timestamp, client, domain, type, resolution } = result;
                         const getStatusStyles = (status: string) => {
                           switch (status) {
                             case "success":
@@ -1412,6 +1414,19 @@ export default function DNSDashboard() {
                           >
                             <div className="flex items-start gap-4">
                               <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2 text-xs text-slate-500 dark:text-slate-400">
+                                  <Clock className="h-3 w-3" />
+                                  <span>{formatTimestamp(timestamp)}</span>
+                                  <span className="mx-1">•</span>
+                                  <Network className="h-3 w-3" />
+                                  <span
+                                    className="font-mono cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                                    title={`${client} (click to copy)`}
+                                    onClick={() => copyToClipboard(client)}
+                                  >
+                                    {client}
+                                  </span>
+                                </div>
                                 <div className="flex items-center gap-3 mb-2">
                                   <span
                                     className="font-mono font-semibold cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate text-slate-900 dark:text-slate-100"
