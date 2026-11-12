@@ -146,6 +146,10 @@ answers dashboard requests from a small read pool with a short-lived summary
 cache. The dashboard is a static export served by the same binary, so there is
 no Node.js process at runtime.
 
+## Changes
+
+See [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
