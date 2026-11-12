@@ -197,7 +197,18 @@ export default function Dashboard() {
         </TabsContent>
       </Tabs>
 
-      <DetailSheet selection={selection} range={range} onClose={() => setSelection(null)} onSelect={setSelection} />
+      <DetailSheet
+        selection={selection}
+        range={range}
+        onClose={() => setSelection(null)}
+        onSelect={setSelection}
+        onShowAll={(f) => {
+          setSelectionState(null);
+          setTabState("queries");
+          setFilter({ ...emptyFilter, ...f });
+          writeLocation("queries", null);
+        }}
+      />
 
       {totals && totals.queries === 0 && (
         <p className="text-center text-xs text-muted-foreground">

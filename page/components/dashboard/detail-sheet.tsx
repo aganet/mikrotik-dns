@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Globe, RefreshCw } from "lucide-react";
+import { Copy, ExternalLink, Globe, RefreshCw } from "lucide-react";
 import { api, type Resolution } from "@/lib/api";
 import { fmtInt, fmtMs, fmtPct, statusLabel } from "@/lib/format";
 import { usePoll } from "@/hooks/use-poll";
@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { QueriesTable } from "./queries-table";
 import { RankedList } from "./ranked-list";
 import { TimelineChart } from "./timeline-chart";
-import type { Selection } from "./types";
+import type { QueryFilterState, Selection } from "./types";
 
 interface Head {
   count: number;
@@ -20,6 +20,8 @@ interface Head {
   name?: string;
   mac?: string;
 }
+
+const pageSize = 25;
 
 interface Related {
   key: string;
@@ -32,19 +34,21 @@ interface Props {
   range: string;
   onClose: () => void;
   onSelect: (s: Selection) => void;
+  onShowAll: (f: Partial<QueryFilterState>) => void;
 }
 
-export function DetailSheet({ selection, range, onClose, onSelect }: Props) {
+export function DetailSheet({ selection, range, onClose, onSelect, onShowAll }: Props) {
   return (
     <Sheet open={selection !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-3xl">
-        {selection && <DetailBody key={`${selection.kind}:${selection.key}`} selection={selection} range={range} onSelect={onSelect} />}
+        {selection && <DetailBody key={`${selection.kind}:${selection.key}`} selection={selection} range={range} onSelect={onSelect} onShowAll={onShowAll} />}
       </SheetContent>
     </Sheet>
   );
 }
 
-function DetailBody({ selection, range, onSelect }: { selection: Selection; range: string; onSelect: (s: Selection) => void }) {
+function DetailBody({ selection, range, onSelect, onShowAll }: Omit<Props, "onClose" | "selection"> & { selection: Selection }) {
+  const [page, setPage] = useState(1);
   const copy = useCopy();
   const isClient = selection.kind === "client";
   const filter = isClient ? { range, client: selection.key } : { range, domain: selection.key };
@@ -58,7 +62,8 @@ function DetailBody({ selection, range, onSelect }: { selection: Selection; rang
     [range, selection.key],
   );
   const problems = usePoll((signal) => api.domains({ ...filter, status: "problem" }, 10, signal), [range, selection.key], 0, isClient);
-  const recent = usePoll((signal) => api.queries(filter, 1, 25, signal), [range, selection.key]);
+  const recent = usePoll((signal) => api.queries(filter, page, pageSize, signal), [range, selection.key, page]);
+  const pages = Math.max(1, Math.ceil((recent.data?.total ?? 0) / pageSize));
   const head = usePoll(
     async (signal): Promise<Head | null> => {
       if (isClient) {
@@ -155,8 +160,34 @@ function DetailBody({ selection, range, onSelect }: { selection: Selection; rang
       </div>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">Recent queries</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-medium">
+            Queries{recent.data ? ` (${fmtInt(recent.data.total)})` : ""}
+          </h3>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7"
+            onClick={() => onShowAll(isClient ? { client: selection.key } : { search: selection.key })}
+          >
+            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            Open in query log
+          </Button>
+        </div>
         <QueriesTable rows={recent.data?.items ?? []} loading={recent.loading} hideClient={isClient} hideDomain={!isClient} onSelect={onSelect} />
+        {pages > 1 && (
+          <div className="flex items-center justify-end gap-2 text-sm">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              Previous
+            </Button>
+            <span className="tabular-nums text-muted-foreground">
+              Page {page} of {fmtInt(pages)}
+            </span>
+            <Button variant="outline" size="sm" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+              Next
+            </Button>
+          </div>
+        )}
       </section>
     </div>
   );
