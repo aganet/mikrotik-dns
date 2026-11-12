@@ -1,386 +1,151 @@
-# 🔍 MikroTik DNS Analytics
+# MikroTik DNS Analytics
 
-> Modern real-time DNS analytics dashboard for MikroTik routers with beautiful web interface
+A DNS logger and dashboard for MikroTik routers. The router sends its `dns`
+(and optionally `dhcp`) log topics to this service over syslog; the service
+stores every query with its answer in SQLite and serves a dashboard and a JSON
+API. One container, one Go binary, no external database.
 
-![DNS Analytics Dashboard](https://img.shields.io/badge/Dashboard-Next.js%2015-blue?style=for-the-badge)
-![Backend](https://img.shields.io/badge/Backend-Go-00ADD8?style=for-the-badge)
-![Database](https://img.shields.io/badge/Database-SQLite-003B57?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge)
+## What is logged
 
-A comprehensive DNS analytics solution that receives DNS logs from MikroTik routers via UDP, stores them in SQLite, and presents beautiful real-time statistics through a modern React dashboard.
+For every DNS request the router logs, the collector records:
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/46d31532-f1f3-4c2d-a513-5941e11d6175" />
+| Field | Source |
+| --- | --- |
+| time, router, client address, domain, record type | `dns query from <client>: #<id> <name>. <type>` |
+| outcome (`ok`, `nodata`, `nxdomain`, `servfail`, `blocked`, `error`) and the answer records | `dns done query: #<id> ...` (RouterOS 7) |
+| response time | delay between the query and its done line, measured at the collector |
+| device name and MAC for the client | `dhcp,info ... assigned <ip> for <mac> <hostname>` lines, and the REST API when configured |
 
----
+Queries answered with `0.0.0.0` or `::` (adlists, static block entries) are
+recorded as `blocked`. Routers that do not log done lines (RouterOS 6) still
+get the query fields; outcome and response time stay empty.
 
-## ✨ Features
+The dashboard shows queries over time stacked by outcome, response time,
+record types, top domains, top clients with device names, problem domains, a
+filterable query log with CSV export, per-client and per-domain drill downs,
+and collector and router health. Time ranges from 1 hour to 30 days, retention
+is configurable (default 7 days).
 
-### 🎯 **Modern Dashboard**
-
-- **Real-time Statistics**: Auto-refreshing dashboard with customizable intervals (5s-5min)
-- **Modern UI**: Next.js 15 + React 19 with Tailwind CSS and Radix UI components
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Animated Numbers**: Smooth transitions when data updates
-- **Interactive Elements**: Click-to-copy functionality throughout the interface
-
-### 📊 **Comprehensive Analytics**
-
-- **Overview Page**: Modern cards with gradients, IPv4 vs IPv6 adoption, query rates
-- **Top Domains**: Visual ranking with progress bars and interactive selection
-- **Client Analysis**: Most active clients with detailed query history
-- **Domain Search**: Powerful search with partial matching capabilities
-- **Query Types**: Distribution analysis with special highlighting for unknown queries
-- **Network Insights**: Query rates, resolution success rates, client distribution
-
-### 🔧 **Advanced Functionality**
-
-- **Domain → Clients**: Click any domain to see which clients are querying it
-- **Client → Domains**: Click any client to see their query history
-- **IPv4/IPv6 Tracking**: Monitor protocol adoption in your network
-- **Failed Query Analysis**: Identify and troubleshoot DNS resolution issues
-- **Real-time Metrics**: Queries per minute, active clients, unique domains
-
-### 🚀 **Production Ready**
-
-- **Docker Containerized**: Complete containerization with Docker Compose
-- **API Proxy**: Single port deployment (3000) with backend proxying
-- **Optimized Backend**: Efficient Go API with SQLite and proper CORS
-- **Auto-purging**: Automatically removes data older than 24 hours
-- **Error Handling**: Robust error handling and null-safe operations
-
----
-
-## 🏃‍♂️ Quick Start
-
-### 1. Using Docker Compose (Recommended)
+## Quick start
 
 ```bash
-# Clone the repository
-git clone https://github.com/publi0/mikrotik-dns.git
+git clone https://github.com/aganet/mikrotik-dns.git
 cd mikrotik-dns
-
-# Start with Docker Compose
-docker compose up -d
-
-# View logs
-docker compose logs -f
+docker compose up -d --build
 ```
 
-### 2. Using Docker Run Directly
+The dashboard is on <http://localhost:3000>, syslog is received on UDP 5354.
+
+## MikroTik configuration
+
+Send the `dns` topic, and `dhcp` for device names, to the collector:
+
+```text
+/system logging action add name=dnslog target=remote remote=<collector-ip> remote-port=5354
+/system logging add topics=dns action=dnslog
+/system logging add topics=dhcp,info action=dnslog
+```
+
+The default remote log format, BSD syslog format and ISO 8601 timestamps are
+all accepted. Do not enable the `packet` sub-topic; it is not needed and only
+adds noise.
+
+Logged lines look like this on RouterOS 7:
+
+```text
+dns query from 192.168.88.10: #4711 example.com. A
+dns done query: #4711 example.com 93.184.216.34
+dns done query: #4712 dns name does not exist
+dhcp,info defconf assigned 192.168.88.37 for B0:E4:5C:27:EF:F2 Samsung
+```
+
+### Optional: REST API enrichment
+
+With a read-only RouterOS user the collector also pulls DHCP leases, the ARP
+table and IPv6 neighbours (so IPv6 clients get the name of the device's DHCP
+lease), plus identity, resources, DNS cache usage and adlist hit counts for
+the System tab.
+
+```text
+/user group add name=readonly policy=read,rest-api,!local,!telnet,!ssh,!ftp,!reboot,!write,!policy,!test,!winbox,!password,!web,!sniff,!sensitive,!api,!romon
+/user add name=dnslog group=readonly password=<password>
+```
+
+Then set `MIKROTIK_URL=https://<router-ip>`, `MIKROTIK_USER` and
+`MIKROTIK_PASSWORD`. Routers with the default self-signed certificate need
+`MIKROTIK_INSECURE=true`.
+
+## Configuration
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `HTTP_ADDR` | `:3000` | Dashboard and API listen address (`PORT` is honoured for compatibility) |
+| `SYSLOG_ADDR` | `:5354` | UDP syslog listen address |
+| `DATABASE_PATH` | `./data/queries.db` (`/data/queries.db` in Docker) | SQLite file |
+| `RETENTION` | `7d` | How long queries are kept; accepts `24h`, `7d`, `30d` |
+| `WEB_DIR` | unset (set in Docker) | Directory with the exported dashboard; API only when unset |
+| `DNS_SERVER` | system resolver | Resolver used by "Resolve now" in the dashboard |
+| `MIKROTIK_URL` | unset | RouterOS REST API base URL, e.g. `https://192.168.88.1` |
+| `MIKROTIK_USER`, `MIKROTIK_PASSWORD` | unset | REST API credentials |
+| `MIKROTIK_INSECURE` | `false` | Skip TLS certificate verification |
+| `MIKROTIK_POLL_INTERVAL` | `1m` | REST API poll interval |
+| `LOG_LEVEL` | `info` | `debug` also logs unparsed syslog lines |
+| `TZ` | `UTC` | Time zone used in CSV exports and logs |
+
+Timestamps are taken when a line arrives at the collector, so the router's
+clock does not need to be correct.
+
+Existing databases from earlier versions are migrated in place on start.
+
+## API
+
+All endpoints accept `range` (`1h`, `6h`, `24h`, `7d`, ...; default `24h`).
+List endpoints also accept `client`, `domain` (exact), `search` (substring of
+the domain), `type` and `status`. `status` is a stored outcome or one of the
+groups `resolved`, `problem`, `failed`, `unknown`.
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/summary?range=24h&limit=10` | totals, outcome counts, record types, zero-filled timeline, top domains, top clients, problem domains |
+| `GET /api/timeline?range=&client=&domain=` | per-bucket counts by outcome and average response time |
+| `GET /api/domains?range=&limit=&search=&status=&client=` | domains with query count, distinct clients, problems, last seen |
+| `GET /api/clients?range=&limit=&domain=` | clients with device name, MAC, query count, distinct domains, problems |
+| `GET /api/queries?range=&page=&page_size=&...` | paged query rows with answers and response time, plus the total |
+| `GET /api/export.csv?range=&...` | the same rows as CSV |
+| `GET /api/resolve?name=&type=` | live lookup through the collector's resolver |
+| `GET /api/status` | collector counters, syslog sources, router snapshot |
+| `GET /healthz` | liveness |
+
+## Development
 
 ```bash
-# Pull and run the pre-built image
-docker run -d \
-  --name mikrotik-dns \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  -p 5354:5354/udp \
-  -v $(pwd)/data:/data \
-  ghcr.io/publi0/mikrotik-dns:latest
-
-# View logs
-docker logs -f mikrotik-dns
+make dev-api     # collector on :8080 with debug logging
+make dev-web     # Next.js dev server on :3000, proxies /api to :8080
+make test        # go vet, go test -race, tsc
+make build       # static dashboard export + binary; make run serves both on :3000
 ```
 
-### 3. Using Deployment Script
+Feed test data without a router:
 
 ```bash
-# Use the provided deployment script
-./deploy-example.sh
+printf 'dns query from 192.168.88.10: #1 example.com. A\ndns done query: #1 example.com 93.184.216.34\n' | nc -u -w1 127.0.0.1 5354
 ```
 
-**Access the dashboard:**
+## Architecture
 
-- 🌐 **Web Dashboard**: http://localhost:3000
-- 📡 **UDP Logs**: Port 5354 (for MikroTik)
-
-### 4. Using Makefile
-
-```bash
-# Check if all tools are available
-make check-tools
-
-# Build and start single image
-make single-build
-make single-up
-
-# View real-time logs
-make single-logs
-
-# Stop services
-make single-down
+```text
+MikroTik --UDP syslog--> collector (Go) --> SQLite (WAL, batched writes)
+                             |
+                             +--> /api/*  and the exported Next.js dashboard
+                             +--> RouterOS REST API (optional, polled)
 ```
 
----
-
-## 📡 MikroTik Configuration
-
-Configure your MikroTik router to send DNS logs:
-
-### Option 1: WebFig/Winbox GUI
-
-1. Go to **System → Logging**
-2. Add new rule:
-   - **Topics**: `dns`
-   - **Action**: `remote`
-   - **Remote Address**: `<your_server_ip>`
-   - **Remote Port**: `5354`
-
-### Option 2: Command Line Interface
-
-```shell
-/system logging add topics=dns action=remote remote=<your_server_ip> remote-port=5354
-```
-
-### Expected Log Format
-
-```
-2025-01-15 14:23:45 dns query from 192.168.1.100: #12345 google.com. A
-2025-01-15 14:23:46 dns query from 192.168.1.100: #12346 facebook.com. AAAA
-```
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-graph LR
-    A[MikroTik Router] -->|UDP:5354| B[Single Container]
-    B -->|Store| C[SQLite DB]
-    B -->|Serve| D[User Browser]
-
-    subgraph "Docker Container"
-        E[Go Backend :8080]
-        F[Next.js Frontend :3000]
-        C
-        E --> F
-    end
-
-    B --> E
-    F -->|Port 3000| D
-```
-
-## 📊 API Endpoints
-
-### Core Statistics
-
-- `GET /api/top-domains` - Most queried domains
-- `GET /api/query-types` - DNS query type distribution
-- `GET /api/clients` - Most active client IPs
-- `GET /api/unique-clients-count` - Count of unique clients
-- `GET /api/unique-domains-count` - Count of unique domains
-
-### Advanced Analytics
-
-- `GET /api/queries-per-minute` - Average queries per minute
-- `GET /api/ipv4-vs-ipv6` - IPv4 vs IPv6 usage statistics
-- `GET /api/all-queries?page=1&page_size=50` - Recent queries with pagination
-
-### Interactive Features
-
-- `GET /api/client-queries?client=<ip>&page=1` - Queries from specific client
-- `GET /api/domain-clients?domain=<domain>&page=1` - Clients querying specific domain
-- `GET /api/domain-queries?domain=<domain>&partial=true&page=1` - Search domains
-
----
-
-## 🎨 Dashboard Features
-
-### Overview Page
-
-- **Modern Gradient Cards**: Beautiful statistics with color-coded themes
-- **IPv4/IPv6 Adoption**: Visual progress bars showing protocol usage
-- **Network Health**: Resolution success rates and query performance
-- **Real-time Metrics**: Live query rates and client distribution
-
-### Domains Page
-
-- **Interactive Domain List**: Click any domain to see client details
-- **Client Analysis**: Shows which clients query specific domains
-- **Query Counts**: Number of queries per client for selected domain
-- **Last Activity**: Timestamp of most recent query
-
-### Clients Page
-
-- **Active Client Ranking**: Most active IP addresses
-- **Query History**: Detailed query log for each client
-- **Domain Breakdown**: What domains each client is accessing
-
-### Search Page
-
-- **Live DNS Resolution**: Real-time DNS lookup for search results matching the original query type
-- **Query Type Specific**: Resolves A, AAAA, CNAME, TXT, MX, NS, PTR records based on logged query type
-- **Block Detection**: Identifies blocked or non-existent domains
-- **Performance Metrics**: Shows DNS resolution time for each domain
-- **Copy Functionality**: One-click copy for domains and DNS records
-
-### All Queries Page
-
-- **Complete Query Log**: Chronological list of all DNS queries
-- **Table Layout**: Organized columns for time, client, domain, type
-- **Responsive Design**: Proper column widths regardless of data length
-
----
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-- `BACKEND_URL`: Internal backend URL for API proxy (default: `http://mikrotik-dns-backend:8080`)
-- `DATABASE_PATH`: SQLite database location (default: `/data/queries.db`)
-- `DNS_SERVER`: Custom DNS server for resolution testing (optional, uses system default if not set)
-
-### Auto-refresh Settings
-
-- **5 seconds**: Real-time monitoring
-- **10 seconds**: Active monitoring
-- **30 seconds**: Regular updates
-- **1 minute**: Casual monitoring
-- **5 minutes**: Background monitoring
-
----
-
-## 🔧 Development
-
-### Local Development
-
-```bash
-# Backend
-go mod tidy
-go run main.go
-
-# Frontend (in separate terminal)
-cd page
-npm install
-npm run dev
-```
-
-### Building from Source
-
-```bash
-# Backend
-CGO_ENABLED=1 go build -o mikrotik-dns .
-
-# Frontend
-cd page
-npm run build
-```
-
----
-
-## 📦 Docker Configuration
-
-### Single Image Deployment
-
-The application is available as a single Docker image with both frontend and backend:
-
-```yaml
-# docker-compose.yml
-services:
-  mikrotik-dns:
-    image: ghcr.io/publi0/mikrotik-dns:latest
-    container_name: mikrotik-dns
-    restart: unless-stopped
-    ports:
-      - "3000:3000" # Web dashboard
-      - "5354:5354/udp" # MikroTik logs
-    volumes:
-      - ./data:/data
-    environment:
-      - DNS_SERVER=${DNS_SERVER:-}
-      - DATABASE_PATH=/data/queries.db
-      - PORT=3000
-      - NODE_ENV=production
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-```
-
-### Environment Variables
-
-- `DATABASE_PATH`: SQLite database location (default: `/data/queries.db`)
-- `DNS_SERVER`: Custom DNS server for resolution testing (optional)
-- `PORT`: Frontend port (default: `3000`)
-- `NODE_ENV`: Node.js environment (default: `production`)
-
----
-
-## 🗄️ Database Schema
-
-SQLite database with automatic cleanup (24h retention):
-
-```sql
-CREATE TABLE queries (
-    id INTEGER PRIMARY KEY,
-    timestamp INTEGER,
-    client TEXT,
-    domain TEXT,
-    type TEXT
-);
-```
-
----
-
-## 🐛 Troubleshooting
-
-### No Data Appearing
-
-1. Check MikroTik logging configuration
-2. Verify UDP port 5354 is accessible
-3. Check container logs: `docker compose logs -f`
-
-### DNS Resolution Issues
-
-- Monitor "Failed Queries" card for UNKNOWN query types
-- Check "Resolution Rate" in Activity Summary
-- Use Domain Search to investigate specific issues
-
-### Performance Issues
-
-- Monitor "Query Rate" metrics
-- Check "Avg. per Client" statistics
-- Review IPv4/IPv6 distribution for network optimization
-
-### Build Issues
-
-- Ensure CGO is enabled for SQLite support
-- Check Docker build context includes all necessary files
-- Verify Node.js dependencies are properly installed
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **MikroTik**: For excellent router hardware and logging capabilities
-- **Go**: For the efficient backend implementation
-- **Next.js & React**: For the modern frontend framework
-- **Tailwind CSS**: For the beautiful and responsive design
-- **Radix UI**: For accessible and customizable components
-- **SQLite**: For the lightweight and reliable database
-
----
-
-<div align="center">
-
-Made with ❤️ for network administrators and DNS enthusiasts
-
-</div>
+The collector pairs each `query` line with its `done` line by request id,
+batches inserts in one transaction per second, purges in chunks on a timer and
+answers dashboard requests from a small read pool with a short-lived summary
+cache. The dashboard is a static export served by the same binary, so there is
+no Node.js process at runtime.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

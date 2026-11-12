@@ -54,3 +54,4 @@ page/*.log
 # Docker
 *.pid
 docker-compose.override.yml
+page/tsconfig.tsbuildinfo

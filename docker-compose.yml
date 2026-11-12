@@ -1,22 +1,19 @@
 services:
   mikrotik-dns:
     container_name: mikrotik-dns
-    restart: unless-stopped
     build: .
+    restart: unless-stopped
     ports:
       - "3000:3000"
       - "5354:5354/udp"
     volumes:
       - ./data:/data
     environment:
-      - DNS_SERVER=${DNS_SERVER:-}
-      - DATABASE_PATH=/data/queries.db
-      - BACKEND_URL=http://127.0.0.1:8080
-      - PORT=3000
-      - NODE_ENV=production
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      RETENTION: ${RETENTION:-7d}
+      DNS_SERVER: ${DNS_SERVER:-}
+      # Optional RouterOS REST API access for device names and router stats.
+      MIKROTIK_URL: ${MIKROTIK_URL:-}
+      MIKROTIK_USER: ${MIKROTIK_USER:-}
+      MIKROTIK_PASSWORD: ${MIKROTIK_PASSWORD:-}
+      MIKROTIK_INSECURE: ${MIKROTIK_INSECURE:-false}
+      TZ: ${TZ:-UTC}

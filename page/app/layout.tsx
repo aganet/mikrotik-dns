@@ -7,29 +7,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "MikroTik DNS Analytics",
-  description:
-    "Real-time DNS query analytics and monitoring dashboard for MikroTik routers",
-  generator: "v0.dev",
+  description: "DNS query analytics for MikroTik routers",
+  icons: { icon: "/favicon.svg" },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <style>{`
-html {
-  font-family: ${GeistSans.style.fontFamily};
-  --font-sans: ${GeistSans.variable};
-  --font-mono: ${GeistMono.variable};
-}
-        `}</style>
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <ThemeProvider defaultTheme="light" storageKey="mikrotik-dns-theme">
+    <html lang="en" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <ThemeProvider defaultTheme="system" storageKey="mikrotik-dns-theme">
           {children}
           <Toaster />
         </ThemeProvider>

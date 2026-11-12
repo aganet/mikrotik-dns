@@ -1,151 +1,51 @@
-# MikroTik DNS Analytics - Single Image Deployment Commands
+IMAGE ?= ghcr.io/aganet/mikrotik-dns
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
-.PHONY: help backend frontend dev clean install build run
+.PHONY: help build build-web build-api run test lint docker up down logs clean dev-api dev-web
 
-# Default target
 help:
-	@echo "MikroTik DNS Analytics - Available Commands:"
-	@echo ""
-	@echo "🔥 Single Image Commands (Primary):"
-	@echo "  make build            - Build single Docker image"
-	@echo "  make up               - Start with Docker Compose"
-	@echo "  make down             - Stop Docker Compose services"
-	@echo "  make logs             - Show container logs"
-	@echo "  make run              - Run single Docker image directly"
-	@echo "  make stop             - Stop single Docker container"
-	@echo "  make restart          - Restart services"
-	@echo ""
-	@echo "🔧 Development Commands:"
-	@echo "  make dev              - Show instructions to run development environment"
-	@echo "  make dev-full         - Start both backend and frontend (backend in background)"
-	@echo "  make dev-backend      - Start backend in development mode (port 8080)"
-	@echo "  make dev-frontend     - Start frontend in development mode (port 3000)"
-	@echo ""
-	@echo "🏗️  Local Build Commands:"
-	@echo "  make build-backend    - Build backend binary"
-	@echo "  make build-frontend   - Build frontend for production"
-	@echo "  make build-local      - Build both backend and frontend locally"
-	@echo ""
-	@echo "🧹 Utility Commands:"
-	@echo "  make clean            - Clean build artifacts"
-	@echo "  make install          - Install frontend dependencies"
-	@echo "  make check-tools      - Check if required tools are installed"
-	@echo ""
+	@echo "build       build the dashboard and the collector binary (serves ./page/out)"
+	@echo "run         run the locally built collector on :3000 / :5354"
+	@echo "test        run Go tests and the TypeScript type-check"
+	@echo "docker      build the Docker image"
+	@echo "up / down   start or stop with Docker Compose"
+	@echo "dev-api     run the collector on :8080 without the dashboard"
+	@echo "dev-web     run the Next.js dev server on :3000, proxying /api to :8080"
+	@echo "clean       remove build artifacts"
 
-# Backend commands
-build-backend:
-	@echo "🏗️  Building backend..."
-	go build -ldflags="-s -w" -o mikrotik-dns main.go
-	@echo "✅ Backend built successfully!"
+build: build-web build-api
 
-run-backend: build-backend
-	@echo "🚀 Starting backend server..."
-	./mikrotik-dns
+build-web:
+	cd page && npm ci --no-audit --no-fund && npm run build
 
-dev-backend:
-	@echo "🔧 Starting backend in development mode..."
-	go run main.go
+build-api:
+	CGO_ENABLED=1 go build -trimpath -ldflags="-s -w -X main.version=$(VERSION)" -o mikrotik-dns .
 
-# Frontend commands
-install:
-	@echo "📦 Installing frontend dependencies..."
-	cd page && npm install --legacy-peer-deps
+run: build-api
+	WEB_DIR=page/out ./mikrotik-dns
 
-build-frontend: install
-	@echo "🏗️  Building frontend..."
-	cd page && npm run build
-	@echo "✅ Frontend built successfully!"
+test:
+	go vet ./...
+	go test -race ./...
+	cd page && npx tsc --noEmit
 
-dev-frontend: install
-	@echo "🔧 Starting frontend development server..."
-	cd page && npm run dev
-
-run-frontend: build-frontend
-	@echo "🚀 Starting frontend production server..."
-	cd page && npm start
-
-# Combined commands
-build-local: build-backend build-frontend
-	@echo "✅ All components built successfully!"
-
-# Single image commands (Primary)
-build:
-	@echo "🔥 Building single Docker image..."
-	docker build -t ghcr.io/publi0/mikrotik-dns:dev .
-	@echo "✅ Single image built successfully!"
+docker:
+	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE):$(VERSION) -t $(IMAGE):latest .
 
 up:
-	@echo "🔥 Starting with Docker Compose..."
-	docker compose up -d
-	@echo "✅ Services started!"
-	@echo "🌐 Web dashboard available at: http://localhost:3000"
+	docker compose up -d --build
 
 down:
-	@echo "🔥 Stopping Docker Compose services..."
 	docker compose down
-	@echo "✅ Services stopped!"
 
 logs:
-	@echo "🔥 Showing container logs..."
 	docker compose logs -f
 
-run:
-	@echo "🔥 Running single Docker image..."
-	docker run --rm -d \
-		--name mikrotik-dns-single \
-		-p 3000:3000 \
-		-p 5354:5354/udp \
-		-v $(PWD)/data:/data \
-		ghcr.io/publi0/mikrotik-dns:dev
-	@echo "✅ Container started!"
-	@echo "🌐 Web dashboard available at: http://localhost:3000"
+dev-api:
+	HTTP_ADDR=:8080 LOG_LEVEL=debug go run .
 
-stop:
-	@echo "🔥 Stopping single Docker container..."
-	@docker stop mikrotik-dns-single 2>/dev/null || echo "ℹ️  Container not running"
-	@echo "✅ Container stopped!"
+dev-web:
+	cd page && npm run dev
 
-restart: down up
-	@echo "✅ Services restarted!"
-
-dev:
-	@echo "🔧 Starting development environment..."
-	@echo "ℹ️  Run the following commands in separate terminals:"
-	@echo "   Terminal 1: make dev-backend"
-	@echo "   Terminal 2: make dev-frontend"
-	@echo ""
-	@echo "🌐 Backend API will be available at: http://localhost:8080/api/"
-	@echo "🖥️  Frontend will be available at:   http://localhost:3000"
-	@echo ""
-
-dev-full:
-	@echo "🔧 Starting full development environment..."
-	@echo "Starting backend in background..."
-	@nohup make dev-backend > backend.log 2>&1 & echo $$! > backend.pid
-	@sleep 2
-	@echo "Starting frontend..."
-	@make dev-frontend
-
-# Utility commands
 clean:
-	@echo "🧹 Cleaning build artifacts..."
-	@rm -f mikrotik-dns
-	@rm -f backend.pid backend.log
-	@rm -rf page/.next
-	@rm -rf page/dist
-	@echo "✅ Clean complete!"
-
-dev-stop:
-	@echo "⏹️  Stopping development services..."
-	@if [ -f backend.pid ]; then kill `cat backend.pid` && rm backend.pid; echo "✅ Backend stopped"; else echo "ℹ️  Backend not running"; fi
-
-dev-logs:
-	@if [ -f backend.log ]; then tail -f backend.log; else echo "❌ Backend log not found. Is the backend running?"; fi
-
-# Check if required tools are installed
-check-tools:
-	@command -v go >/dev/null 2>&1 || { echo "❌ Go is required but not installed. Visit https://golang.org/"; exit 1; }
-	@command -v npm >/dev/null 2>&1 || { echo "❌ npm is required but not installed. Visit https://nodejs.org/"; exit 1; }
-	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker is required but not installed. Visit https://docker.com/"; exit 1; }
-	@docker compose version >/dev/null 2>&1 || { echo "❌ Docker Compose is required but not installed."; exit 1; }
-	@echo "✅ All required tools are available!"
+	rm -rf mikrotik-dns page/.next page/out
