@@ -381,6 +381,44 @@ func serveAPI(db *sql.DB) {
 		})
 	})
 
+	mux.HandleFunc("/api/queries-per-hour", func(w http.ResponseWriter, r *http.Request) {
+		// Floor each timestamp to its 15-minute bucket and return the raw unix ts.
+		// The browser will format it in the user's local timezone.
+		rows, err := db.Query(`
+			SELECT
+				(timestamp / 900) * 900 AS bucket_ts,
+				COUNT(*) AS count
+			FROM queries
+			WHERE timestamp >= strftime('%s','now') - 86400
+			GROUP BY bucket_ts
+			ORDER BY bucket_ts ASC
+		`)
+		if err != nil {
+			http.Error(w, "DB error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		type HourCount struct {
+			Ts    int64 `json:"ts"`
+			Count int   `json:"count"`
+		}
+
+		var out []HourCount
+		for rows.Next() {
+			var h HourCount
+			if err := rows.Scan(&h.Ts, &h.Count); err != nil {
+				continue
+			}
+			out = append(out, h)
+		}
+		if out == nil {
+			out = []HourCount{}
+		}
+
+		json.NewEncoder(w).Encode(out)
+	})
+
 	mux.HandleFunc("/api/ipv4-vs-ipv6", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query(`
 			SELECT
